@@ -24,17 +24,17 @@ library(ggplot2)
 
 
 # Data Import and Preparation  --------------------------------------------
+
 #### Policy Data is directly downloaded from the github repository of the 
 #### Oxford Covid-19 Government Response Tracker
 
 url_ox <- "https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest.csv"
-policy <- read.csv(url_ox)
+npi <- read.csv(url_ox)      # non-pharmaceutical interventions
 
-str(policy)
+str(npi)
 
-policy <- policy %>% 
+npi <- npi %>% 
   mutate(Date = as.Date(as.character(Date), "%Y%m%d"))
-
 
 #### Vaccination Data is directly downloaded from the github repository of the 
 #### Our World in Data account
@@ -48,27 +48,29 @@ vaccination <- vaccination %>%
   mutate(Date = as.Date(date), date = NULL)
 
 
+#### New Cases and Deaths downloaded from the github repository of the 
+#### Johns Hopkins University
+
+url_jhu_deaths <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv"
+url_jhu_cases <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
+
+new_deaths <- read.csv(url_jhu_deaths)
+new_cases <- read.csv(url_jhu_cases)
+
+# change format of dataset from wide to long -> column names into Date variable
+names(new_deaths)  <- sub('^X', '', names(new_deaths))
+names(new_cases)  <- sub('^X', '', names(new_cases))
 
 
+new_deaths <- new_deaths %>%
+  pivot_longer(cols = colnames(new_deaths)[5:ncol(new_deaths)], names_to = "Date", 
+               values_to = "Daily Deaths") %>%
+  mutate(Date = as.Date(strptime(Date, "%m.%d.%y")))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+new_cases <- new_cases %>%
+  pivot_longer(cols = colnames(new_cases)[5:ncol(new_cases)], names_to = "Date", 
+               values_to = "Daily Cases") %>%
+  mutate(Date = as.Date(strptime(Date, "%m.%d.%y")))
 
 
 
