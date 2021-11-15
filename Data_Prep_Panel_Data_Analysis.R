@@ -50,17 +50,59 @@ npi <- covid %>%
 # index variables temporarily to facilitate removal of duplicates of measures
 
 npi <- npi %>% 
-  select(-colnames(npi)[which(str_detect(colnames(npi), "^E[[:digit:]]"))]) 
+  select(-colnames(npi)[which(str_detect(colnames(npi), "^E[[:digit:]]"))]) %>%
+  select(-colnames(npi)[which(str_detect(colnames(npi), "Display"))]) %>%
+  rename_at("CountryName", ~"Country")
 
 flags <- colnames(npi)[which(str_detect(colnames(npi), "Flag"))]
 npi <- npi %>%
-  select(-flags)
+  select(-all_of(flags))
 
-index_vars <- colnames(covid[which(str_detect(colnames(covid), "Index"))])
-vars <- which(colnames(npi) %in% c("Date", index_vars))
-npi <- npi[!duplicated(npi[, -vars]), ] 
+measure_names <- colnames(npi)[str_detect(colnames(npi), "^[[:Alpha:]][[:digit:]]")]
 
-saveRDS(npi, "Data/npi.rds")
+countries <- unique(npi$Country)
+
+# Obtain Dates for individual measures
+
+new_measures <- data.frame(Date = character(0), Country = character(0), 
+                           Measure = character(0), Intensity = numeric(0))
+
+for(i in countries){
+  
+  for(j in measure_names){
+
+    sub <- npi %>% 
+      filter(Country == i) 
+    
+    row_index <- which(sub[, j] != lag(sub[, j]))
+    
+    if(is_empty(row_index)){
+      
+      next
+      
+    }
+      
+    imposed_date <- sub[row_index, "Date"]
+    
+    intensity <-sub[row_index, j]
+    
+    data <- data.frame(Date = imposed_date, Country = i, Intensity = intensity,
+                       Measure = j)
+    
+    new_measures <- rbind(new_measures, data)
+    
+  }
+  
+}
+
+npi <- npi %>%
+  select(-all_of(measure_names))
+
+measures <- new_measures %>%
+  arrange(Country, Date) %>%
+  inner_join(., npi, by = c("Date", "Country"))
+
+saveRDS(measures, "Data/npi.rds")
 
 #### Vaccination Data is directly downloaded from the github repository of the 
 #### Our World in Data account
@@ -116,7 +158,13 @@ new_deaths <- new_deaths %>%
   select(-Province.State) 
 
 new_deaths <- rbind(new_deaths, reg_death) %>%
-  rename_at("Country.Region", ~"Country")
+  rename_at("Country.Region", ~"Country") %>%
+  mutate("Five_Day_Lead" = lead(Daily_Deaths, n = 5), 
+         "Seven_Day_Lead" = lead(Daily_Deaths, n = 7), 
+         "Ten_Day_Lead" = lead(Daily_Deaths, n = 10),
+         "Thirteen_Day_Lead" = lead(Daily_Deaths, n = 13),
+         "Fifteen_Day_Lead" = lead(Daily_Deaths, n = 15),
+         "Twenty_Day_Lead" = lead(Daily_Deaths, n = 20))
 
 # Same for Cases
   
@@ -131,7 +179,13 @@ new_cases <- new_cases %>%
   select(-Province.State) 
 
 new_cases <- rbind(new_cases, reg_cases) %>%
-  rename_at("Country.Region", ~"Country")
+  rename_at("Country.Region", ~"Country") %>%
+  mutate("Five_Day_Lead" = lead(Daily_Cases, n = 5), 
+         "Seven_Day_Lead" = lead(Daily_Cases, n = 7), 
+         "Ten_Day_Lead" = lead(Daily_Cases, n = 10),
+         "Thirteen_Day_Lead" = lead(Daily_Cases, n = 13),
+         "Fifteen_Day_Lead" = lead(Daily_Cases, n = 15),
+         "Twenty_Day_Lead" = lead(Daily_Cases, n = 20))
 
 saveRDS(new_cases, "Data/cases.rds")
 saveRDS(new_deaths, "Data/deaths.rds")
