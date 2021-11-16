@@ -17,6 +17,7 @@ if (!require("stringr")) install.packages("stringr")
 if (!require("stringi")) install.packages("stringi")
 if (!require("zoo")) install.packages("zoo")
 if (!require("timetk")) install.packages("timetk")
+if (!require("readxl")) install.packages("readxl")
 
 library(tidyverse)
 library(plyr)
@@ -27,6 +28,7 @@ library(stringr)
 library(stringi)
 library(zoo)
 library(timetk)
+library(readxl)
 
 
 # Data Import and Preparation  --------------------------------------------
@@ -190,11 +192,8 @@ new_cases <- rbind(new_cases, reg_cases) %>%
 saveRDS(new_cases, "Data/cases.rds")
 saveRDS(new_deaths, "Data/deaths.rds")
 
-#### Static Country Indicators World Bank
-
-
-
-
+#### Static Country Indicators 
+#### https://databank.worldbank.org/indicator/NY.GDP.PCAP.CD/1ff4a498/Popular-Indicators
 
 
 
