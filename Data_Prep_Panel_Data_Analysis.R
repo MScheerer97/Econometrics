@@ -194,6 +194,79 @@ saveRDS(new_deaths, "Data/deaths.rds")
 
 #### Static Country Indicators 
 #### https://databank.worldbank.org/indicator/NY.GDP.PCAP.CD/1ff4a498/Popular-Indicators
+#### Extract latest value for each variable
+
+gini_hospital <- read_excel("World_Bank_Gini_Hospital.xlsx", sheet = 1, 
+                            na = "..")[-435:-439, -2]
+colnames(gini_hospital) <- c("Variable", "Country", "CountryCode", as.character(2013:2020))
+
+gini_hosp <- pivot_longer(gini_hospital, colnames(gini_hospital[4:11]), 
+                          names_to = "Year", values_to = "Value") %>%
+  pivot_wider(names_from = Variable, values_from = Value)
+colnames(gini_hosp)[4:5] <- c("Gini_Index", "Hospital_Beds_per_1000_people")
+
+n <- length(unique(gini_hosp$Country))
+countries <- unique(gini_hosp$Country)
+
+gini_hospital_data <- data.frame(Country = character(0), Gini = numeric(0), 
+                                 Hospital_Beds = numeric(0))
+
+for(i in 1:n){
+  
+  data <- gini_hosp %>%
+    filter(Country == countries[i]) 
+  
+  gini <- data$Gini_Index
+  
+  if(sum(!is.na(gini)) == 0){
+    
+    gini <- NA
+    
+  } 
+  
+  else {
+    
+    gini <- tail(na.omit(data$Gini_Index), n = 1)
+    
+  }
+
+  hosp <- data$Hospital_Beds_per_1000_people
+  
+  if(sum(!is.na(hosp)) == 0){
+    
+    hosp <- NA
+    
+  } 
+  
+  else {
+    
+    hosp <- tail(na.omit(data$Hospital_Beds_per_1000_people), n = 1)
+    
+  }
+
+  new_data <- data.frame(Country = countries[i], Gini = gini, Hospital_Beds = hosp)
+  
+  gini_hospital_data <- rbind(gini_hospital_data, new_data)
+  
+}
+
+#### Extracting further data (different World Bank indicators)
+
+world_bank <- read_excel("World_Bank.xlsx", sheet = 1, na = "..")[-652:-656, -2]
+colnames(world_bank) <- c("Variable", "Country", "CountryCode", "Value_2020")
+
+world_bank <- world_bank %>%
+  pivot_wider(names_from = Variable, values_from = Value_2020)
+colnames(world_bank)[3:5] <- c("GDP_per_Capita_USD", "Population_Over_65", 
+                               "Population_Density")
+
+world_bank_complete <- inner_join(world_bank, gini_hospital_data, by = "Country")
+
+saveRDS(world_bank_complete, "Data/world_bank.rds")
+
+
+
+
 
 
 
