@@ -18,6 +18,7 @@ if (!require("stringi")) install.packages("stringi")
 if (!require("zoo")) install.packages("zoo")
 if (!require("timetk")) install.packages("timetk")
 if (!require("readxl")) install.packages("readxl")
+if (!require("lubridate")) install.packages("lubridate")
 
 library(tidyverse)
 library(plyr)
@@ -29,7 +30,7 @@ library(stringi)
 library(zoo)
 library(timetk)
 library(readxl)
-
+library(lubridate)
 
 # Data Import and Preparation  --------------------------------------------
 
@@ -60,51 +61,60 @@ flags <- colnames(npi)[which(str_detect(colnames(npi), "Flag"))]
 npi <- npi %>%
   select(-all_of(flags))
 
-measure_names <- colnames(npi)[str_detect(colnames(npi), "^[[:Alpha:]][[:digit:]]")]
-
-countries <- unique(npi$Country)
-
-# Obtain Dates for individual measures
-
-new_measures <- data.frame(Date = character(0), Country = character(0), 
-                           Measure = character(0), Intensity = numeric(0))
-
-for(i in countries){
-  
-  for(j in measure_names){
-
-    sub <- npi %>% 
-      filter(Country == i) 
+npi_kw <- npi %>%
+  mutate(Year = format(Date, "%Y")) %>%
+  mutate(KW = week(Date)) %>%
+  group_by(Country, CountryCode, Year, KW) %>%
+  summarise_all(median)
     
-    row_index <- which(sub[, j] != lag(sub[, j]))
-    
-    if(is_empty(row_index)){
-      
-      next
-      
-    }
-      
-    imposed_date <- sub[row_index, "Date"]
-    
-    intensity <-sub[row_index, j]
-    
-    data <- data.frame(Date = imposed_date, Country = i, Intensity = intensity,
-                       Measure = j)
-    
-    new_measures <- rbind(new_measures, data)
-    
-  }
-  
-}
+saveRDS(npi_kw, "Data/npi_weekly.rds")
 
-npi <- npi %>%
-  select(-all_of(measure_names))
-
-measures <- new_measures %>%
-  arrange(Country, Date) %>%
-  inner_join(., npi, by = c("Date", "Country"))
-
-saveRDS(measures, "Data/npi.rds")
+## Code for calculating first date of measures
+# measure_names <- colnames(npi)[str_detect(colnames(npi), "^[[:Alpha:]][[:digit:]]")]
+# 
+# countries <- unique(npi$Country)
+# 
+# # Obtain Dates for individual measures
+# 
+# new_measures <- data.frame(Date = character(0), Country = character(0), 
+#                            Measure = character(0), Intensity = numeric(0))
+# 
+# for(i in countries){
+#   
+#   for(j in measure_names){
+# 
+#     sub <- npi %>% 
+#       filter(Country == i) 
+#     
+#     row_index <- which(sub[, j] != lag(sub[, j]))
+#     
+#     if(is_empty(row_index)){
+#       
+#       next
+#       
+#     }
+#       
+#     imposed_date <- sub[row_index, "Date"]
+#     
+#     intensity <-sub[row_index, j]
+#     
+#     data <- data.frame(Date = imposed_date, Country = i, Intensity = intensity,
+#                        Measure = j)
+#     
+#     new_measures <- rbind(new_measures, data)
+#     
+#   }
+#   
+# }
+# 
+# npi <- npi %>%
+#   select(-all_of(measure_names))
+# 
+# measures <- new_measures %>%
+#   arrange(Country, Date) %>%
+#   inner_join(., npi, by = c("Date", "Country"))
+# 
+# saveRDS(measures, "Data/npi.rds")
 
 #### Vaccination Data is directly downloaded from the github repository of the 
 #### Our World in Data account
@@ -159,14 +169,18 @@ new_deaths <- new_deaths %>%
   filter(Province.State == "") %>%
   select(-Province.State) 
 
+
 new_deaths <- rbind(new_deaths, reg_death) %>%
   rename_at("Country.Region", ~"Country") %>%
-  mutate("Five_Day_Lead" = lead(Daily_Deaths, n = 5), 
-         "Seven_Day_Lead" = lead(Daily_Deaths, n = 7), 
-         "Ten_Day_Lead" = lead(Daily_Deaths, n = 10),
-         "Thirteen_Day_Lead" = lead(Daily_Deaths, n = 13),
-         "Fifteen_Day_Lead" = lead(Daily_Deaths, n = 15),
-         "Twenty_Day_Lead" = lead(Daily_Deaths, n = 20))
+  rename_at("Daily_Deaths",~"Weekly_Average_Deaths") %>%
+  mutate(Year = format(Date, "%Y")) %>%
+  mutate(KW = week(Date)) %>%
+  group_by(Country, Year, KW) %>%
+  summarise_all(mean) %>%
+  mutate("One_Week_Lead" = lead(Weekly_Average_Deaths, n = 1), 
+         "Two_Week_Lead" = lead(Weekly_Average_Deaths, n = 2), 
+         "Three_Week_Lead" = lead(Weekly_Average_Deaths, n = 3),
+         "Four_Week_Lead" = lead(Weekly_Average_Deaths, n = 4))
 
 # Same for Cases
   
@@ -182,12 +196,15 @@ new_cases <- new_cases %>%
 
 new_cases <- rbind(new_cases, reg_cases) %>%
   rename_at("Country.Region", ~"Country") %>%
-  mutate("Five_Day_Lead" = lead(Daily_Cases, n = 5), 
-         "Seven_Day_Lead" = lead(Daily_Cases, n = 7), 
-         "Ten_Day_Lead" = lead(Daily_Cases, n = 10),
-         "Thirteen_Day_Lead" = lead(Daily_Cases, n = 13),
-         "Fifteen_Day_Lead" = lead(Daily_Cases, n = 15),
-         "Twenty_Day_Lead" = lead(Daily_Cases, n = 20))
+  rename_at("Daily_Cases",~"Weekly_Average_Cases") %>%
+  mutate(Year = format(Date, "%Y")) %>%
+  mutate(KW = week(Date)) %>%
+  group_by(Country, Year, KW) %>%
+  summarise_all(mean) %>%
+  mutate("One_Week_Lead" = lead(Weekly_Average_Cases, n = 1), 
+         "Two_Week_Lead" = lead(Weekly_Average_Cases, n = 2), 
+         "Three_Week_Lead" = lead(Weekly_Average_Cases, n = 3),
+         "Four_Week_Lead" = lead(Weekly_Average_Cases, n = 4))
 
 saveRDS(new_cases, "Data/cases.rds")
 saveRDS(new_deaths, "Data/deaths.rds")
@@ -262,30 +279,21 @@ colnames(world_bank)[3:5] <- c("GDP_per_Capita_USD", "Population_Over_65",
 
 world_bank_complete <- inner_join(world_bank, gini_hospital_data, by = "Country")
 
-saveRDS(world_bank_complete, "Data/world_bank.rds")
+#### Country Filter - keeping reliable countries
+#### using https://www.transparency.org/en/cpi/2020/index/hkg
 
+wb_full <- world_bank_complete[complete.cases(world_bank_complete), ]
 
+cpi <- read_excel("CPI2020.xlsx", sheet = 1, skip = 2)[, 1:4] %>%
+  filter(`CPI score 2020` >= 45)
 
+all <- inner_join(wb_full, cpi, c("CountryCode" = "ISO3")) %>% 
+  select(-Country.y) %>%
+  rename_at("Country.x", ~"Country")
 
+saveRDS(all, "Data/world_bank_complete.rds")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#### Continent and Latitude Data as controls for seasons
 
 
 
