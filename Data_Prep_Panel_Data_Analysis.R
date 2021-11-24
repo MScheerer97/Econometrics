@@ -294,8 +294,10 @@ all <- inner_join(wb_full, cpi, c("CountryCode" = "ISO3")) %>%
 saveRDS(all, "Data/world_bank_complete.rds")
 
 #### Continent and Latitude Data as controls for seasons
+#### Data for map data visualization
 
-
+geodata <- map_data("world")
+saveRDS(geodata, "Data/geodata.rds")
 
 
 
