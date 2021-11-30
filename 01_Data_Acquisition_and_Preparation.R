@@ -164,10 +164,10 @@ new_cases_weekly <- covid_who %>%
   summarise_all(mean) %>%
   ungroup() %>%
   group_by(Country) %>%
-  dplyr::mutate("One_Week_Lead" = lead(Weekly_Average_Cases, n = 1), 
-                "Two_Week_Lead" = lead(Weekly_Average_Cases, n = 2), 
-                "Three_Week_Lead" = lead(Weekly_Average_Cases, n = 3),
-                "Four_Week_Lead" = lead(Weekly_Average_Cases, n = 4)) %>%
+  dplyr::mutate("One_Week_Lead_Cases" = lead(Weekly_Average_Cases, n = 1), 
+                "Two_Week_Lead_Cases" = lead(Weekly_Average_Cases, n = 2), 
+                "Three_Week_Lead_Cases" = lead(Weekly_Average_Cases, n = 3),
+                "Four_Week_Lead_Cases" = lead(Weekly_Average_Cases, n = 4)) %>%
   arrange(Country, Year, KW)
 
 # Weekly Deaths
@@ -181,10 +181,10 @@ new_deaths_weekly <- covid_who %>%
   summarise_all(mean) %>%
   ungroup() %>%
   group_by(Country) %>%
-  dplyr::mutate("One_Week_Lead" = lead(Weekly_Average_Deaths, n = 1), 
-                "Two_Week_Lead" = lead(Weekly_Average_Deaths, n = 2), 
-                "Three_Week_Lead" = lead(Weekly_Average_Deaths, n = 3),
-                "Four_Week_Lead" = lead(Weekly_Average_Deaths, n = 4)) %>%
+  dplyr::mutate("One_Week_Lead_Deaths" = lead(Weekly_Average_Deaths, n = 1), 
+                "Two_Week_Lead_Deaths" = lead(Weekly_Average_Deaths, n = 2), 
+                "Three_Week_Lead_Deaths" = lead(Weekly_Average_Deaths, n = 3),
+                "Four_Week_Lead_Deaths" = lead(Weekly_Average_Deaths, n = 4)) %>%
   arrange(Country, Year, KW)
 
 #### Static Country Indicators 

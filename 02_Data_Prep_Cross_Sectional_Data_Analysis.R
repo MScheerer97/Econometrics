@@ -27,7 +27,7 @@ library(lubridate)
 #### Country Filter and cross-sectional data
 
 wb_data <- readRDS("Data/world_bank_complete.rds") %>%
-  select(-Region) 
+  select(-Region, -CountryCode) 
 
 #### Aggregation of npi variables: 
 
@@ -58,7 +58,7 @@ investment_total <- npi %>%
 
 pop <- readRDS("Data/total_population.rds") %>%
   mutate(pop_per_10_million = Total_Population/10000000, 
-         pop_per_one_hundred_k = Total_Population/100000)
+         pop_per_one_hundred_k = Total_Population/100000) 
 
 #### Hemisphere
 
@@ -95,13 +95,15 @@ colnames(vac) <- colnames(vac) %>%
 ## Divide investment variables by GDP
 ## Drop unnecessary variables
 
+cross_section_data <- inner_join(cases, deaths, by = "Country") %>%
+  inner_join(measures_total, by = "Country") %>%
+  inner_join(investment_total, by = "Country") %>%
+  inner_join(vac, by = "Country") %>%
+  inner_join(wb_data, by = "Country") %>%
+  inner_join(pop, by = "Country") %>%
+  inner_join(hemi, by = "Country") 
 
-
-
-
-
-
-
+saveRDS(cross_section_data, "Output/cross_section_data.rds")
 
 
 
