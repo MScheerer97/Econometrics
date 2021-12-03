@@ -53,7 +53,16 @@ npi <- readRDS("Data/npi_weekly.rds") %>%
   select(-CountryCode)
 #### Weekly Vaccination Rate
 
-vac <- readRDS("Data/vaccination_weekly.rds") %>%
+vac <- readRDS("Data/vaccination_weekly.rds")
+
+first_vac <- vac %>%
+  filter(people_vaccinated_per_hundred != 0) %>%
+  arrange(Year, KW)
+
+year_vac <- first_vac$Year[1]
+kw_vac <- first_vac$KW[1]
+
+vac <- vac%>%
   ungroup() %>%
   select(-Date) %>%
   select(-CountryCode)
@@ -84,4 +93,28 @@ panel_data$people_fully_vaccinated_per_hundred[is.na(panel_data$people_fully_vac
 panel_data <- panel_data[complete.cases(panel_data), ]
 
 saveRDS(panel_data, "Output/panel_data.rds")
+
+#### Split Panel into before and after vaccination period using year and kw of first
+## vaccination date
+
+before <- panel_data %>%
+  filter(Year == year_vac & KW < kw_vac)
+
+after <- panel_data %>%
+  filter((Year == year_vac & KW >= kw_vac) | Year == 2021)
+
+saveRDS(before, "Output/panel_data_before_vac.rds")
+saveRDS(after, "Output/panel_data_after_vac.rds")
+
+
+
+
+
+
+
+
+
+
+
+
 

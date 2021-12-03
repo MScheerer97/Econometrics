@@ -31,22 +31,39 @@ wb_data <- readRDS("Data/world_bank_complete.rds") %>%
 
 #### Aggregation of npi variables: 
 
-npi <- readRDS("Data/npi_daily.rds")
+npi <- readRDS("Data/npi_daily.rds") %>%
+  select(-H7_Vaccination.policy)
 
-measure_cols <- c("Country", colnames(npi)[c(4:14, 17:19)])
 investment_cols <- c("Country", colnames(npi)[15:16])
 
-# Days measure was 3
-# measures_total <- npi %>%
-#   select(all_of(measure_cols)) %>%
-#   dplyr::group_by(Country) %>%
-#   summarise_each(funs(sum(. == 3, na.rm = TRUE)))
+# Days measure was restriction!
 
-# Days measure was 2 or 3
-measures_total <- npi %>%
-  select(all_of(measure_cols)) %>%
+two_max <- c("C3_Cancel.public.events", "C5_Close.public.transport", "C7_Restrictions.on.internal.movement", 
+             "H1_Public.information.campaigns", "H3_Contact.tracing")
+three_max <- c("C1_School.closing", "C2_Workplace.closing", "C6_Stay.at.home.requirements", 
+               "H2_Testing.policy", "H8_Protection.of.elderly.people")
+four_max <- c("C4_Restrictions.on.gatherings", "C8_International.travel.controls", 
+              "H6_Facial.Coverings")
+
+measures_two <- npi %>%
+  select(Country, all_of(two_max)) %>%
+  dplyr::group_by(Country) %>%
+  summarise_each(funs(sum(. == 2, na.rm = TRUE)))
+
+measures_three <- npi %>%
+  select(Country, all_of(three_max)) %>%
   dplyr::group_by(Country) %>%
   summarise_each(funs(sum(. %in% c(2, 3), na.rm = TRUE)))
+
+measures_four <- npi %>%
+  select(Country, all_of(four_max)) %>%
+  dplyr::group_by(Country) %>%
+  summarise_each(funs(sum(. %in% c(2, 3, 4), na.rm = TRUE)))
+
+measures_total <- inner_join(measures_two, measures_three, by = "Country") %>%
+  inner_join(measures_four, by = "Country")
+
+measures_total <- measures_total[, c("Country", sort(colnames(measures_total))[c(1:8, 10:14)])]
 
 # Sum of investments in healthcare/vaccine
 investment_total <- npi %>%
@@ -104,34 +121,6 @@ cross_section_data <- inner_join(cases, deaths, by = "Country") %>%
   inner_join(hemi, by = "Country") 
 
 saveRDS(cross_section_data, "Output/cross_section_data.rds")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
