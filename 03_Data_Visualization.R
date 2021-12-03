@@ -222,6 +222,20 @@ kbl(measure_desc) %>%
   row_spec(0, bold = TRUE) %>%
   save_kable(file = "figures/measures_days_descriptives.png", zoom = 1.25)
 
+#### Controls (wb) Statistics
+
+wb_desc <- round(stat.desc(wb_indicator[, c(-1, -8)], 2))
+wb_desc <- wb_desc[c("mean", "median", "std.dev"), ]
+rownames(wb_desc) <- c("Mean", "Median", "Standard Deviation")
+
+kbl(wb_desc) %>%
+  kable_styling(bootstrap_options = "responsive", position = "left", 
+                html_font = "times", font_size = 12) %>%
+  kable_classic() %>%
+  kable_styling(full_width = F) %>%
+  row_spec(0, bold = TRUE) %>%
+  save_kable(file = "figures/world_bank_controls_descriptives.png", zoom = 1.25)
+
 #### Barplot - Measure Days Mean Values
 
 measure_bar <- data.frame(t(measure_desc)) 
@@ -244,7 +258,11 @@ ggsave("figures/measure_days_barplot.png")
 
 panel <- readRDS("Output/panel_data.rds") 
 
-#### 
+#### Faceting by Continent --> Line Plot of weekly cases for ALL countries
+
+
+
+#### Plot measures with highest effects from regression and pick some countries to display
 
 
 
