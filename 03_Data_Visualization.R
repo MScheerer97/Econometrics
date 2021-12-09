@@ -16,6 +16,7 @@ rm(list = ls())
 ## Corr_Table: npi days - cum cases/deaths
 
 if (!require("tidyverse")) install.packages("tidyverse")
+if (!require("plyr")) install.packages("plyr")
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("knitr")) install.packages("knitr")
 if (!require("kableExtra")) install.packages("kableExtra")
@@ -28,8 +29,11 @@ if (!require("viridis")) install.packages("viridis")
 if (!require("ggrepel")) install.packages("ggrepel")
 if (!require("pastecs")) install.packages("pastecs")
 if (!require("magick")) install.packages("magick")
+if (!require("rgeos")) install.packages("rgeos")
+if (!require("maptools")) install.packages("maptools")
 
 library(tidyverse)
+library(plyr)
 library(dplyr)
 library(knitr)
 library(kableExtra)
@@ -42,6 +46,8 @@ library(viridis)
 library(ggrepel)
 library(pastecs)
 library(magick)
+library(rgeos)
+library(maptools)
 
 # Descriptive Statistics - Cross Section --------------------------------------
 
@@ -254,9 +260,58 @@ measure_barplot <- ggplot(measure_bar, aes(x = reorder(Measure, Mean), y = Mean)
 
 ggsave("figures/measure_days_barplot.png")  
 
+#### World maps: total cases and total deaths
+
+cases_deaths_2021_November <- cross_sec %>%
+  mutate("Cases Per 10 Million" = round(Cumulative_cases/pop_per_10_million, 2), 
+         "Deaths Per 100 Thousand" = round(Cumulative_deaths/pop_per_one_hundred_k, 2)) %>%
+  select(Country, `Cases Per 10 Million`, `Deaths Per 100 Thousand`)
+
+geospatial <- readRDS("Data/geodata.rds") %>%
+  select(-subregion)
+
+# Merge geospatial with cases deaths
+
+geo_Nov21 <- cases_deaths_2021_November %>%
+  right_join(geospatial, by = c("Country" = "region"))
+
+## Plot maps for different time
+# Cases Nov 21
+
+map_cases <- ggplot(geo_Nov21, aes(x = long, y = lat, group = group, colour = "")) + 
+  geom_polygon(aes(fill = `Cases Per 10 Million`)) +
+  scale_fill_distiller(na.value = "grey50", guide = "colourbar", aesthetics = "fill", 
+                       palette = "Reds", direction = 1) +
+  scale_colour_manual(values = NA) +     
+  guides(colour = guide_legend("No data\navailable", override.aes = list(colour = "grey50"))) +
+  xlab("Longitude") + 
+  ylab("Latitude")  + 
+  labs(fill = "Cumulative cases\nper 10 million") +
+  theme_classic() +
+  theme(axis.title = element_blank(), axis.text = element_blank())
+
+ggsave("figures/cases_map.png", width = 8)  
+
+# Deaths
+
+map_deaths <- ggplot(geo_Nov21, aes(x = long, y = lat, group = group, colour = "")) + 
+  geom_polygon(aes(fill = `Deaths Per 100 Thousand`)) +
+  scale_fill_distiller(na.value = "grey50", guide = "colourbar", aesthetics = "fill", 
+                       palette = "Reds", direction = 1) +
+  scale_colour_manual(values = NA) +     
+  guides(colour = guide_legend("No data\navailable", override.aes = list(colour = "grey50"))) +
+  xlab("Longitude") + 
+  ylab("Latitude")  + 
+  labs(fill = "Cumulative deaths\nper 100 thousand") +
+  theme_classic() +
+  theme(axis.title = element_blank(), axis.text = element_blank())
+
+ggsave("figures/deaths_map.png", width = 8)  
+
 # Descriptive Statistics - Panel Data -------------------------------------
 
 panel <- readRDS("Output/panel_data.rds") 
+
 
 #### Faceting by Continent --> Line Plot of weekly cases for ALL countries
 
