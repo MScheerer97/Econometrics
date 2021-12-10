@@ -31,6 +31,7 @@ if (!require("pastecs")) install.packages("pastecs")
 if (!require("magick")) install.packages("magick")
 if (!require("rgeos")) install.packages("rgeos")
 if (!require("maptools")) install.packages("maptools")
+if (!require("lubridate")) install.packages("lubridate")
 
 library(tidyverse)
 library(plyr)
@@ -48,6 +49,7 @@ library(pastecs)
 library(magick)
 library(rgeos)
 library(maptools)
+library(lubridate)
 
 # Descriptive Statistics - Cross Section --------------------------------------
 
@@ -310,16 +312,42 @@ ggsave("figures/deaths_map.png", width = 8)
 
 # Descriptive Statistics - Panel Data -------------------------------------
 
-panel <- readRDS("Output/panel_data.rds") 
+countries <- readRDS("Output/cross_section_data.rds")%>%
+  select(Country)
 
+covid_who <- read.csv("WHO-COVID-19-global-data.csv") %>%
+  rename_at("ï..Date_reported", ~ "Date") %>%
+  rename_at("Country_code",  ~ "CountryCode") %>%
+  select(-WHO_region) %>%
+  filter(New_cases >= 0) %>%
+  filter(New_deaths >= 0) %>%
+  mutate(Date = as.Date(Date))
 
-#### Faceting by Continent --> Line Plot of weekly cases for ALL countries
+covid_who$Country <- mapvalues(covid_who$Country, 
+                                from = c("Republic of Korea", "Czechia", "Slovakia", "Saint Lucia",
+                                         "The United Kingdom", "United States of America"),
+                                to = c("Korea, Rep.", "Czech Republic", 
+                                       "Slovak Republic", "St. Lucia","United Kingdom",
+                                       "United States"))
 
+covid_who <- covid_who %>%
+  filter(Country %in% countries$Country)
 
+#### Line plot of daily cases for Germany and closest countries from clustering
 
-#### Plot measures with highest effects from regression and pick some countries to display
-
-
+cl_countries <- covid_who %>%
+  filter(Country %in% c("Germany", "Israel", "Austria", "Korea, Rep.", "Slovak Republic")) 
+  
+cont_cases <- ggplot(cl_countries, aes(x = Date, y = New_cases, group = Country)) +
+  geom_line(aes(color = Country)) +
+  scale_color_discrete() + 
+  scale_x_date(date_breaks = "3 months") +
+  scale_y_continuous(breaks = seq(0, 90000, 15000)) +
+  labs(y = "Daily new cases") +
+  theme_grey() +
+  theme(axis.title.x = element_text(vjust = 0.5), axis.title.y = element_text(vjust = 1))
+  
+ggsave("figures/daily_cases_lineplot.png", width = 12, height = 7)  
 
 
 

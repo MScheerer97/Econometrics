@@ -10,23 +10,42 @@ rm(list = ls())
 ## Panel Data with clustered std errors
 ## FE Model 
 ## FGLS-FE
-## Arellano-Bond
+## Outcome: percentage of reduction (1-lead/today cases) --> percentage reduction
 
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("dplyr")) install.packages("dplyr")
-if (!require("tibble")) install.packages("tibble")
 if (!require("ggplot2")) install.packages("ggplot2")
-if (!require("stringr")) install.packages("stringr")
-if (!require("stringi")) install.packages("stringi")
-if (!require("lubridate")) install.packages("lubridate")
+if (!require("plm")) install.packages("plm")
 
 library(tidyverse)
 library(dplyr)
-library(tibble)
 library(ggplot2)
-library(stringr)
-library(stringi)
-library(lubridate)
+library(plm)
+
+#### Load Data
+
+cross_sec <- readRDS("Output/cross_section_data.rds")
+panel <- readRDS("Output/panel_data.rds")
+
+
+
+#### Cross Sectional Analysis ------------------------------------------------
+
+## Static regression to obtain effects mainly for financial interventions
+
+
+
+
+#### Panel Data Models -------------------------------------------------------
+
+## Dynamic models for estimating effects of different measures
+## Create factor variable: first create factor for hemisphere (1 northern, 0 southern)
+## create interaction of month to obtain monthly effect for different hemisphere
+## 
+
+
+
+
 
 
 
