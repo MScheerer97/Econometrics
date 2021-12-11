@@ -72,12 +72,10 @@ colnames(panel) <- mapvalues(colnames(panel), from = c("Kw", "Gdp Per Capita Usd
 
 ## Adjust column data types
 
-mut_cols <- colnames(panel)[col_change_ind][c(-12, -13)]
 factor_vars <- c("Country", "Month", "Hemisphere", "Continent", "KW", "Year")
 
 panel <- panel %>%
   ungroup() %>%
-  mutate_at(all_of(mut_cols), as.factor) %>%
   mutate_at(all_of(factor_vars), as.factor) %>%
   select(-`Vaccination Policy`, -KW, -Year)
 
@@ -85,20 +83,50 @@ panel <- panel %>%
 
 fe_col_rem <- which(colnames(panel) == "GDP Per Capita USD")
 fe_col_end <- which(colnames(panel) == "Hemisphere Month") 
-FE_panel <- panel[, -fe_col_rem:-fe_col_end]
-  
+FE_panel <- panel[, -fe_col_rem:-fe_col_end] 
+
+## Create Binary variables: measure required
+## Define at which level a variable means required
+
+two_max <- c("C3_Cancel.public.events", "C5_Close.public.transport", "C7_Restrictions.on.internal.movement", 
+             "H1_Public.information.campaigns", "H3_Contact.tracing")
+two_max <- str_to_title(str_replace_all(str_sub(two_max, 4), "\\.", " "))
+
+three_max <- c("C1_School.closing", "C2_Workplace.closing", "C6_Stay.at.home.requirements", 
+               "H2_Testing.policy", "H8_Protection.of.elderly.people")
+three_max <- str_to_title(str_replace_all(str_sub(three_max, 4), "\\.", " "))
+
+four_max <- c("C4_Restrictions.on.gatherings", "C8_International.travel.controls", 
+              "H6_Facial.Coverings")
+four_max <- str_to_title(str_replace_all(str_sub(four_max, 4), "\\.", " "))
+
+
+FE_panel[two_max] <- as.data.frame(lapply(FE_panel[two_max], 
+               function(x) ifelse(x == 2, 1, 0)))
+
+FE_panel[three_max] <- as.data.frame(lapply(FE_panel[three_max], 
+                                          function(x) ifelse(x >= 2, 1, 0)))
+
+FE_panel[four_max] <- as.data.frame(lapply(FE_panel[four_max], 
+                                          function(x) ifelse(x >= 2, 1, 0)))
+
+npi_vars <- c(two_max, three_max, four_max)
+
+FE_panel <- FE_panel %>%
+  mutate_at(all_of(npi_vars), as.factor) 
+
+
 #### FE regression - four regressions for both, lead cases and lead deaths 
 ## Resulting in two tables per method: effects on lead cases and lead deaths
 
 ## One Lead Cases
 
-fe_regression <- lm(`One Week Lead Cases` ~ ., data = FE_panel[, c(-4:-11, -24:-25)])
+fe_regression <- lm(`Four Week Lead Cases` ~ ., data = FE_panel[, c(-3:-5, -7:-11, -24:-25)])
 
 summary(fe_regression)
 fe_cl <- vcovCL(fe_regression, cluster = ~Country)
 
 coeftest(fe_regression, vcov = fe_cl)
 
-colnames(FE_panel)
 
 
