@@ -254,7 +254,8 @@ coeftest(fe_four_death, vcov = vcovHC(fe_four_death, method = "white2", cluster 
 
 ## Cases
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual", 
+                       index = c("Country", "KW"))
 summary(fgls_one_case)
 
 fgls_two_case <- pggls(formula_2c, data = two_lead_case, model = "within", effect = "individual")
