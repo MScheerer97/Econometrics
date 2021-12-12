@@ -90,6 +90,9 @@ panel_data <- inner_join(cases_week, deaths_week, by = c("Country", "Year", "KW"
 panel_data$people_vaccinated_per_hundred[is.na(panel_data$people_vaccinated_per_hundred)] <- 0
 panel_data$people_fully_vaccinated_per_hundred[is.na(panel_data$people_fully_vaccinated_per_hundred)] <- 0
 
+panel_data$H4_Emergency.investment.in.healthcare <- NULL
+panel_data$H5_Investment.in.vaccines <- NULL
+
 panel_data <- panel_data[complete.cases(panel_data), ]
 
 saveRDS(panel_data, "Output/panel_data.rds")

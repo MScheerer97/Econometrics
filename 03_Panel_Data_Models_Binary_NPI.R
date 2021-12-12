@@ -6,7 +6,7 @@
 # Libraries  --------------------------------------------------------------
 rm(list = ls())
 
-###### Regression Analysis
+###### Regression Analysis: 1st January 2021 to KW 44
 ## Panel Data with clustered std errors
 ## FE Model 
 ## FGLS-FE
@@ -39,7 +39,30 @@ panel <- readRDS("Output/panel_data.rds")
 
 ## Static regression to obtain effects mainly for financial interventions
 
+cross_sec <- cross_sec %>%
+  mutate(Cumulative_cases = Cumulative_cases/pop_per_10_million, 
+         Cumulative_deaths = Cumulative_deaths/pop_per_one_hundred_k) %>%
+  select(-hemisphere)
 
+cross_sec <- cross_sec[, -c(1, 19:27, 34:38)]
+
+col_change_ind <- which(str_detect(colnames(cross_sec), "^[[:alpha:]]+[[:digit:]]+_"))
+
+colnames(cross_sec)[col_change_ind] <- str_to_title(str_replace_all(str_sub(colnames(cross_sec)[col_change_ind], 4), "\\.", " "))
+
+colnames(cross_sec) <- str_to_title(str_replace_all(colnames(cross_sec), "_", " "))
+colnames(cross_sec) <- mapvalues(colnames(cross_sec), from = c("Gdp Per Capita Usd"), 
+                             to = c("GDP_Per_Capita_USD"))
+
+colnames(cross_sec) <- str_replace_all(colnames(cross_sec), " ", "_")
+
+## Linear Regression - cross-sectional analysis
+
+cross_lm_cases <- lm(Cumulative_Cases~. - Cumulative_Deaths, data = cross_sec[, -3:-15])
+coeftest(cross_lm_cases, vcov = vcovHC(cross_lm_cases, type = "HC0"))
+
+cross_lm_deaths <- lm(Cumulative_Deaths~. -Cumulative_Cases, data = cross_sec[, -3:-15])
+coeftest(cross_lm_deaths, vcov = vcovHC(cross_lm_deaths, type = "HC0"))
 
 
 #### Panel Data Models -------------------------------------------------------
@@ -56,8 +79,6 @@ rem_vars <- c(index_vars, "CountryCode", "pop_per_one_hundred_k", "pop_per_10_mi
 
 panel <- panel %>%
   select(-all_of(rem_vars))
-
-panel$hemisphere_month <- as.factor(paste(panel$Month, panel$hemisphere))
 
 ## Adjust column names
 
@@ -77,16 +98,12 @@ factor_vars <- c("Country", "Month", "Hemisphere", "Continent", "KW", "Year")
 panel <- panel %>%
   ungroup() %>%
   mutate_at(all_of(factor_vars), as.factor) %>%
-  mutate(Time = paste(Year, KW)) %>%
-  select(-`Vaccination Policy`, -KW, -Year, -`People Vaccinated Per Hundred`)
+  select(-`Vaccination Policy`, -`People Vaccinated Per Hundred`) %>%
+  filter(Year == "2021") %>%
+  select(-Year)
 
-## Create FE Data
 
-fe_col_rem <- which(colnames(panel) == "GDP Per Capita USD")
-fe_col_end <- which(colnames(panel) == "Hemisphere") - 1 
-FE_panel <- panel[, -fe_col_rem:-fe_col_end] 
-
-## Create Binary variables: measure required
+## Create Binary variables: measure required analog to Chen et. al ADB Economics
 ## Define at which level a variable means required
 
 two_max <- c("C3_Cancel.public.events", "C5_Close.public.transport", "C7_Restrictions.on.internal.movement", 
@@ -102,166 +119,173 @@ four_max <- c("C4_Restrictions.on.gatherings", "C8_International.travel.controls
 four_max <- str_to_title(str_replace_all(str_sub(four_max, 4), "\\.", " "))
 
 
-FE_panel[two_max] <- as.data.frame(lapply(FE_panel[two_max], 
+panel[two_max] <- as.data.frame(lapply(panel[two_max], 
                function(x) ifelse(x == 2, 1, 0)))
 
-FE_panel[three_max] <- as.data.frame(lapply(FE_panel[three_max], 
+panel[three_max] <- as.data.frame(lapply(panel[three_max], 
                                           function(x) ifelse(x >= 2, 1, 0)))
 
-FE_panel[four_max] <- as.data.frame(lapply(FE_panel[four_max], 
+panel[four_max] <- as.data.frame(lapply(panel[four_max], 
                                           function(x) ifelse(x >= 2, 1, 0)))
 
-npi_vars <- c(two_max, three_max, four_max, "Time")
+npi_vars <- c(two_max, three_max, four_max)
+
+panel <- panel %>%
+  mutate_at(all_of(npi_vars), as.factor)
+
+colnames(panel) <- str_replace_all(colnames(panel), " ", "_")
+
+## Create FE Data
+
+fe_col_rem <- which(colnames(panel) == "GDP_Per_Capita_USD")
+fe_col_end <- which(colnames(panel) == "Hemisphere") - 1 
+FE_panel <- panel[, -fe_col_rem:-fe_col_end] 
+
+## Variables according to Carraro et al.
+## transform cases to log
 
 FE_panel <- FE_panel %>%
-  mutate_at(all_of(npi_vars), as.factor) %>%
-  mutate(Month = paste(Month, Hemisphere)) %>% 
-  select(-Hemisphere, -`Hemisphere Month`)
+  select(-Protection_Of_Elderly_People, -Facial_Coverings, -Hemisphere, -Month) 
 
-colnames(FE_panel)[12] <- "Month_Hemisphere"
+saveRDS(FE_panel, "Output/Regression_Data.rds")
 
-colnames(FE_panel) <- str_replace_all(colnames(FE_panel), " ", "_")
+logs <- colnames(FE_panel)[str_detect(colnames(FE_panel), "Cases|Deaths")]
+FE_panel[, logs] <- FE_panel[, logs] + 0.0000001
 
-# FE regression  -----------------------------------------------------------
-## Four regressions for both, lead cases and lead deaths
-## Resulting in two tables per method: effects on lead cases and lead deaths
+FE_panel <- FE_panel %>%
+  mutate_at(all_of(logs), log)
 
-### Cases
-## One Lead Cases
-
-fe_one_lead_cases <- lm(One_Week_Lead_Cases ~ ., data = FE_panel[, c(-4:-11, -24:-25)])
-
-summary(fe_one_lead_cases)
-fe_cl_one_cases <- vcovCL(fe_one_lead_cases, cluster = ~Country)
-coeftest(fe_one_lead_cases, vcov = fe_cl_one_cases)
-
-## Two Lead Cases
-
-fe_two_lead_cases <- lm(Two_Week_Lead_Cases ~ ., data = FE_panel[, c(-3, -5:-11, -24:-25)])
-
-summary(fe_two_lead_cases)
-fe_cl_two_cases <- vcovCL(fe_two_lead_cases, cluster = ~Country)
-coeftest(fe_two_lead_cases, vcov = fe_cl_two_cases)
-
-## Three Lead Cases
-
-fe_three_lead_cases <- lm(Three_Week_Lead_Cases ~ ., data = FE_panel[, c(-3:-4, -6:-11, -24:-25)])
-
-summary(fe_three_lead_cases)
-fe_cl_three_cases <- vcovCL(fe_three_lead_cases, cluster = ~Country)
-coeftest(fe_three_lead_cases, vcov = fe_cl_three_cases)
-
-## Four Lead Cases
-
-fe_four_lead_cases <- lm(Four_Week_Lead_Cases ~ ., data = FE_panel[, c(-3:-5, -7:-11, -24:-25)])
-
-summary(fe_four_lead_cases)
-fe_cl_four_cases <- vcovCL(fe_four_lead_cases, cluster = ~Country)
-coeftest(fe_four_lead_cases, vcov = fe_cl_four_cases)
-
-
-### Deaths
-## One Lead Deaths
-
-fe_one_lead_deaths <- lm(One_Week_Lead_Deaths ~ ., data = FE_panel[, c(-2:-6, -9:-11, -24:-25)])
-
-summary(fe_one_lead_deaths)
-fe_cl_one_deaths <- vcovCL(fe_one_lead_deaths, cluster = ~Country)
-coeftest(fe_one_lead_deaths, vcov = fe_cl_one_deaths)
-
-## Two Lead Deaths
-
-fe_two_lead_deaths <- lm(Two_Week_Lead_Deaths ~ ., data = FE_panel[, c(-2:-6, -8, -10:-11, -24:-25)])
-
-summary(fe_two_lead_deaths)
-fe_cl_two_deaths <- vcovCL(fe_two_lead_deaths, cluster = ~Country)
-coeftest(fe_two_lead_deaths, vcov = fe_cl_two_deaths)
-
-## Three Lead Deaths
-
-fe_three_lead_deaths <- lm(Three_Week_Lead_Deaths ~ ., data = FE_panel[, c(-2:-6, -8:-9, -11, -24:-25)])
-
-summary(fe_three_lead_deaths)
-fe_cl_three_deaths <- vcovCL(fe_three_lead_deaths, cluster = ~Country)
-coeftest(fe_three_lead_deaths, vcov = fe_cl_three_deaths)
-
-## Four Lead Deaths
-
-fe_four_lead_deaths <- lm(Four_Week_Lead_Deaths ~ ., data = FE_panel[, c(-2:-6, -8:-10, -24:-25)])
-
-summary(fe_four_lead_deaths)
-fe_cl_four_deaths <- vcovCL(fe_four_lead_deaths, cluster = ~Country)
-coeftest(fe_four_lead_deaths, vcov = fe_cl_four_deaths)
-
-
-# FGLS FE Regression ------------------------------------------------------
+# FE Regression  ------------------------------------------------------
 ## Create Subs of data to insert formula into plm 
-one_lead_case <- FE_panel[, c(-4:-11, -24:-25)]
-two_lead_case <- FE_panel[, c(-3, -5:-11, -24:-25)]
-three_lead_case <- FE_panel[, c(-3:-4, -6:-11, -24:-25)]
-four_lead_case <- FE_panel[, c(-3:-5, -7:-11, -24:-25)]
 
-one_lead_death <- FE_panel[, c(-2:-6, -9:-11, -24:-25)]
-two_lead_death <- FE_panel[, c(-2:-6, -8, -10:-11, -24:-25)]
-three_lead_death <- FE_panel[, c(-2:-6, -8:-9, -11, -24:-25)]
-four_lead_death <- FE_panel[, c(-2:-6, -8:-10, -24:-25)]
+one_lead_case <- pdata.frame(FE_panel[, (-5:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
 
-## Create formula
+two_lead_case <- pdata.frame(FE_panel[, c(-4, -6:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+three_lead_case <- pdata.frame(FE_panel[, c(-4:-5, -7:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+four_lead_case <- pdata.frame(FE_panel[, c(-4:-6, -8:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+one_lead_death <- pdata.frame(FE_panel[, c(-3:-7, -10:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T) 
+
+two_lead_death <- pdata.frame(FE_panel[, c(-3:-7, -9, -11:-12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+three_lead_death <- pdata.frame(FE_panel[, c(-3:-7, -9:-10, -12)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+four_lead_death <- pdata.frame(FE_panel[, c(-3:-7, -9:-11)], index = c("Country", "KW"), 
+                               drop.index = F, row.names = T)
+
+## Create formula for FE
 # Cases
 
-varnames <- names(one_lead_case)[c(-3, -4, -19)]
+varnames <- names(one_lead_case)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_1c <- paste0(names(one_lead_case[3]), "~", exp)
+formula_1c <- paste0(names(one_lead_case[4]), "~", exp)
 
-varnames <- names(two_lead_case)[-3, -4, -19]
+varnames <- names(two_lead_case)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_2c <- paste0(names(two_lead_case[3]), "~", exp)
+formula_2c <- paste0(names(two_lead_case[4]), "~", exp)
 
-varnames <- names(three_lead_case)[-3]
+varnames <- names(three_lead_case)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_3c <- paste0(names(three_lead_case[3]), "~", exp)
+formula_3c <- paste0(names(three_lead_case[4]), "~", exp)
 
-varnames <- names(four_lead_case)[-3]
+varnames <- names(four_lead_case)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_4c <- paste0(names(four_lead_case[3]), "~", exp)
+formula_4c <- paste0(names(four_lead_case[4]), "~", exp)
 
 # Deaths
 
-varnames <- names(one_lead_death)[-3]
+varnames <- names(one_lead_death)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_1d <- paste0(names(one_lead_death[3]), "~", exp)
+formula_1d <- paste0(names(one_lead_death[4]), "~", exp)
 
-varnames <- names(two_lead_death)[-3]
+varnames <- names(two_lead_death)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_2d <- paste0(names(two_lead_death[3]), "~", exp)
+formula_2d <- paste0(names(two_lead_death[4]), "~", exp)
 
-varnames <- names(three_lead_death)[-3]
+varnames <- names(three_lead_death)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_3d <- paste0(names(three_lead_death[3]), "~", exp)
+formula_3d <- paste0(names(three_lead_death[4]), "~", exp)
 
-varnames <- names(four_lead_death)[-3]
+varnames <- names(four_lead_death)[c(-1:-2, -4)]
 exp <- paste0(varnames,collapse='+')
-formula_4d <- paste0(names(four_lead_death[3]), "~", exp)
+formula_4d <- paste0(names(four_lead_death[4]), "~", exp)
 
-## FGLS Models
+### Models with clustered std. errors
 
-fgls_one_lead_case <- pggls(formula_1c, data = one_lead_case, effect = "individual",
-      model = "within", index = "Country")
+## Cases
 
-summary(fgls_one_lead_case)
+fe_one_case <- plm(formula_1c, data = one_lead_case, model="within")
+coeftest(fe_one_case, vcov = vcovHC(fe_one_case, method = "white2", cluster = "group"))
 
-fgls_two_lead_case <- pggls(formula_2c, data = two_lead_case, effect = "individual",
-                            model = "within", index = "Country")
+fe_two_case <- plm(formula_2c, data = two_lead_case, model="within")
+coeftest(fe_two_case, vcov = vcovHC(fe_two_case, method = "white2", cluster = "group"))
 
-summary(fgls_two_lead_case)
+fe_three_case <- plm(formula_3c, data = three_lead_case, model="within")
+coeftest(fe_three_case, vcov = vcovHC(fe_three_case, method = "white2", cluster = "group"))
+
+fe_four_case <- plm(formula_4c, data = four_lead_case, model="within")
+coeftest(fe_four_case, vcov = vcovHC(fe_four_case, method = "white2", cluster = "group"))
+
+## Deaths
+
+fe_one_death <- plm(formula_1d, data = one_lead_death, model="within")
+coeftest(fe_one_death, vcov = vcovHC(fe_one_death, method = "white2", cluster = "group"))
+
+fe_two_death <- plm(formula_2d, data = two_lead_death, model="within")
+coeftest(fe_two_death, vcov = vcovHC(fe_two_death, method = "white2", cluster = "group"))
+
+fe_three_death <- plm(formula_3d, data = three_lead_death, model="within")
+coeftest(fe_three_death, vcov = vcovHC(fe_three_death, method = "white2", cluster = "group"))
+
+fe_four_death <- plm(formula_4d, data = four_lead_death, model="within")
+coeftest(fe_four_death, vcov = vcovHC(fe_four_death, method = "white2", cluster = "group"))
 
 
+# FGLS Fixed Effects  ----------------------------------------------------------
 
+## Cases
 
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
 
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
 
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
 
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
 
+## Deaths
 
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
+
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
+
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
+
+fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
+summary(fgls_one_case)
+
+#### Hausman Test: Fixed or Random?
+
+re_one_case <- plm(formula_1c, data = one_lead_case, model = "random")
+
+phtest(fe_one_case, re_one_case)
+
+#### --> Hausman Test Result: Fixed effects!
 
 

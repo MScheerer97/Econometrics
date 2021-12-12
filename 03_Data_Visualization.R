@@ -222,7 +222,7 @@ measure_desc <- round(stat.desc(measures[, -1]), 2)
 measure_desc <- measure_desc[c("mean", "median", "std.dev"), ]
 rownames(measure_desc) <- c("Mean", "Median", "Standard Deviation")
 
-kbl(measure_desc) %>%
+kbl(t(measure_desc)) %>%
   kable_styling(bootstrap_options = "responsive", position = "left", 
                 html_font = "times", font_size = 12) %>%
   kable_classic() %>%
@@ -236,7 +236,7 @@ wb_desc <- round(stat.desc(wb_indicator[, c(-1, -8)], 2))
 wb_desc <- wb_desc[c("mean", "median", "std.dev"), ]
 rownames(wb_desc) <- c("Mean", "Median", "Standard Deviation")
 
-kbl(wb_desc) %>%
+kbl(t(wb_desc)) %>%
   kable_styling(bootstrap_options = "responsive", position = "left", 
                 html_font = "times", font_size = 12) %>%
   kable_classic() %>%
