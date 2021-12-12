@@ -257,35 +257,32 @@ coeftest(fe_four_death, vcov = vcovHC(fe_four_death, method = "white2", cluster 
 fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
 summary(fgls_one_case)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_two_case <- pggls(formula_2c, data = two_lead_case, model = "within", effect = "individual")
+summary(fgls_two_case)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_three_case <- pggls(formula_3c, data = three_lead_case, model = "within", effect = "individual")
+summary(fgls_three_case)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_four_case <- pggls(formula_4c, data = four_lead_case, model = "within", effect = "individual")
+summary(fgls_four_case)
 
 ## Deaths
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_one_death <- pggls(formula_1d, data = one_lead_death, model = "within", effect = "individual")
+summary(fgls_one_death)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_two_death <- pggls(formula_2d, data = two_lead_death, model = "within", effect = "individual")
+summary(fgls_two_death)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_three_death <- pggls(formula_3d, data = three_lead_death, model = "within", effect = "individual")
+summary(fgls_three_death)
 
-fgls_one_case <- pggls(formula_1c, data = one_lead_case, model = "within", effect = "individual")
-summary(fgls_one_case)
+fgls_four_death <- pggls(formula_4d, data = four_lead_death, model = "within", effect = "individual")
+summary(fgls_four_death)
 
 #### Hausman Test: Fixed or Random?
 
 re_one_case <- plm(formula_1c, data = one_lead_case, model = "random")
-
 phtest(fe_one_case, re_one_case)
 
 #### --> Hausman Test Result: Fixed effects!
-
-
