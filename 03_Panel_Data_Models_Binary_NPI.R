@@ -20,6 +20,7 @@ if (!require("plm")) install.packages("plm")
 if (!require("stringr")) install.packages("stringr")
 if (!require("sandwich")) install.packages("sandwich")
 if (!require("lmtest")) install.packages("lmtest")
+if (!require("stargazer")) install.packages("stargazer")
 
 library(tidyverse)
 library(dplyr)
@@ -29,6 +30,7 @@ library(plm)
 library(stringr)
 library(sandwich)
 library(lmtest)
+library(stargazer)
 
 #### Load Data
 
@@ -155,6 +157,7 @@ FE_panel[, logs] <- FE_panel[, logs] + 0.0000001
 FE_panel <- FE_panel %>%
   mutate_at(all_of(logs), log)
 
+
 # FE Regression  ------------------------------------------------------
 ## Create Subs of data to insert formula into plm 
 
@@ -224,17 +227,35 @@ formula_4d <- paste0(names(four_lead_death[4]), "~", exp)
 ## Cases
 
 fe_one_case <- plm(formula_1c, data = one_lead_case, model="within")
-coeftest(fe_one_case, vcov = vcovHC(fe_one_case, method = "white2", cluster = "group"))
+coef <- coeftest(fe_one_case, vcov = vcovHC(fe_one_case, method = "white2", cluster = "group"))
+diag(fe_one_case$vcov) <- coef[, 2]^2
 
 fe_two_case <- plm(formula_2c, data = two_lead_case, model="within")
-coeftest(fe_two_case, vcov = vcovHC(fe_two_case, method = "white2", cluster = "group"))
+coef <- coeftest(fe_two_case, vcov = vcovHC(fe_two_case, method = "white2", cluster = "group"))
+diag(fe_two_case$vcov) <- coef[, 2]^2
 
 fe_three_case <- plm(formula_3c, data = three_lead_case, model="within")
-coeftest(fe_three_case, vcov = vcovHC(fe_three_case, method = "white2", cluster = "group"))
+coef <- coeftest(fe_three_case, vcov = vcovHC(fe_three_case, method = "white2", cluster = "group"))
+diag(fe_three_case$vcov) <- coef[, 2]^2
 
 fe_four_case <- plm(formula_4c, data = four_lead_case, model="within")
-coeftest(fe_four_case, vcov = vcovHC(fe_four_case, method = "white2", cluster = "group"))
+coef <- coeftest(fe_four_case, vcov = vcovHC(fe_four_case, method = "white2", cluster = "group"))
+diag(fe_four_case$vcov) <- coef[, 2]^2
 
+
+## Print Tables
+
+var_nam <- c("log Weekly Average Cases", str_remove_all(str_replace_all(rownames(coef)[-1], "_", " "), 
+                                                        "[[:digit:]]"))
+
+stargazer(fe_one_case, fe_two_case, fe_three_case, fe_four_case, 
+          out = "figures/fe_cases.html", covariate.labels = var_nam, align = TRUE,
+          column.labels = c("One Week Lead", "Two Week Lead", "Three Week Lead", "Four Week Lead"), 
+          star.char = c("*", "**", "***"), star.cutoffs = c(.1, .05, .01), 
+          omit.stat = c("rsq", "f"), add.lines = list(c("Country fixed effects", rep("Yes", 4))),
+          type = "html", omit = 13, font.size = "small", dep.var.labels.include = FALSE, 
+          column.sep.width = "10pt")
+          
 ## Deaths
 
 fe_one_death <- plm(formula_1d, data = one_lead_death, model="within")
