@@ -22,8 +22,7 @@ if (!require("viridis")) install.packages("viridis")
 if (!require("ggrepel")) install.packages("ggrepel")
 if (!require("pastecs")) install.packages("pastecs")
 if (!require("magick")) install.packages("magick")
-if (!require("lubridate")) install.packages("lubridate")
-if (!require("stargazer")) install.packages("stargazer")
+if (!require("gridExtra")) install.packages("gridExtra")
 
 library(tidyverse)
 library(plyr)
@@ -39,8 +38,7 @@ library(viridis)
 library(ggrepel)
 library(pastecs)
 library(magick)
-library(lubridate)
-library(stargazer)
+library(gridExtra)
 
 data <- readRDS("Output/Regression_Data.rds") %>%
   ungroup()
@@ -49,25 +47,32 @@ data <- readRDS("Output/Regression_Data.rds") %>%
 
 ## Histograms for Cases and Deaths: log needed? 
 
-cases_histo <- ggplot(data, aes(x = Weekly_Average_Cases)) +
-  geom_histogram(fill = "grey", position  = "dodge") + 
+cases_histo <- ggplot(data, aes(x = exp(Weekly_Average_Cases))) +
+  geom_histogram(fill = "grey", position  = "dodge", bins = 50) + 
   labs(x = "Weekly average cases", y = "Count") +
   theme_classic()
 
+ggsave("figures/cases_histo.png", width = 10)  
 
-deaths_histo <- ggplot(data, aes(x = Weekly_Average_Deaths)) +
-  geom_histogram(fill = "grey", position = "dodge")+
+
+deaths_histo <- ggplot(data, aes(x = exp(Weekly_Average_Deaths))) +
+  geom_histogram(fill = "grey", position  = "dodge", bins = 50) + 
   labs(x = "Weekly average deaths", y = "Count") +
   theme_classic()
+
+ggsave("figures/deaths_histo.png", width = 10) 
 
 ## Descriptive Stats for npis:
 
 data[, 13:23] <- lapply(data[, 13:23], as.numeric) 
 data[, 13:23] <- data[, 13:23] -1
 
-npi_reg <- stat.desc(data[, 13:23])
+npi_reg <- data[, c(3, 8, 13:23)]
+npi_reg <- stat.desc(npi_reg)
+
 npi_reg <- npi_reg[c("mean", "median", "std.dev"), ]
 rownames(npi_reg) <- c("Mean", "Median", "Standard Deviation")
+colnames(npi_reg) <- str_replace_all(colnames(npi_reg), "_", " ")
 
 kbl(t(npi_reg)) %>%
   kable_styling(bootstrap_options = "responsive", position = "left", 
@@ -75,9 +80,9 @@ kbl(t(npi_reg)) %>%
   kable_classic() %>%
   kable_styling(full_width = F) %>%
   row_spec(0, bold = TRUE) %>%
+  pack_rows("Non-pharmaceutical interventions", 3, 13) %>%
   save_kable(file = "figures/binary_npi_regression.png", zoom = 1.25)
 
-# Regression Tables -------------------------------------------------------
 
 
 
