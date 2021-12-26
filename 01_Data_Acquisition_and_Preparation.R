@@ -262,8 +262,12 @@ world_bank_complete <- inner_join(world_bank, gini_hospital_data, by = "Country"
 
 wb_full <- world_bank_complete[complete.cases(world_bank_complete), ]
 
-cpi <- read_excel("CPI2020.xlsx", sheet = 1, skip = 2)[, 1:4] %>%
-  filter(`CPI score 2020` >= 45)
+cpi <- read_excel("CPI2020.xlsx", sheet = 1, skip = 2)[, 1:4] 
+
+mean_cpi <- mean(cpi$`CPI score 2020`)
+
+cpi <- cpi %>%
+  filter(`CPI score 2020` >= mean_cpi)
 
 all <- inner_join(wb_full, cpi, c("CountryCode" = "ISO3")) %>% 
   select(-Country.y) %>%
