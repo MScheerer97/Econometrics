@@ -21,7 +21,9 @@ if (!require("stringr")) install.packages("stringr")
 if (!require("sandwich")) install.packages("sandwich")
 if (!require("lmtest")) install.packages("lmtest")
 if (!require("stargazer")) install.packages("stargazer")
-if (!require("rqpd")) install.packages("rqpd", repos="http://R-Forge.R-project.org")
+if (!require("rqpd")) install.packages("rqpd", repos = "http://R-Forge.R-project.org")
+if (!require("knitr")) install.packages("knitr")
+if (!require("kableExtra")) install.packages("kableExtra")
 
 library(tidyverse)
 library(dplyr)
@@ -33,6 +35,9 @@ library(sandwich)
 library(lmtest)
 library(stargazer)
 library(rqpd)
+library(knitr)
+library(kableExtra)
+
 
 #### Load Data
 
@@ -162,7 +167,7 @@ FE_panel <- panel[, -fe_col_rem:-fe_col_end]
 ## transform cases to log
 
 FE_panel <- FE_panel %>%
-  select(-Protection_Of_Elderly_People, -Facial_Coverings, -Hemisphere, -Month) 
+  select(-Protection_Of_Elderly_People, -Hemisphere, -Month) 
 
 logs <- colnames(FE_panel)[str_detect(colnames(FE_panel), "Cases|Deaths")]
 FE_panel[, logs] <- FE_panel[, logs] + 0.0000001
@@ -339,8 +344,21 @@ stargazer(fe_three_death, fe_four_death,
 
 re_one_case <- plm(formula_1c, data = one_lead_case, model = "random")
 pht <- phtest(fe_one_case, re_one_case)
-pht$statistic
-round(pht$p.value, 4)
-pht$method
+
+hausman <- round(data.frame(chisq = pht$statistic, df = pht$parameter, pvalue = pht$p.value), 3)
+rownames(hausman) <- NULL
+colnames(hausman) <- c("Chi-square statistic", "Degree of freedoms", "p-Value")
+
+kbl(hausman) %>%
+  kable_styling(bootstrap_options = "responsive", position = "left", 
+                html_font = "times", font_size = 12) %>% 
+  add_header_above(c("Hausman Test" = 3)) %>%
+  footnote(general = "one model is inconsistent", 
+                    general_title = "Alternative hypothesis: ",
+                    footnote_as_chunk = T, title_format = "italic") %>%
+  kable_classic() %>%
+  kable_styling(full_width = F) %>%
+  row_spec(0, bold = TRUE) %>%
+  save_kable(file = "figures/hausman_test_FE.png", zoom = 1.25)
 
 #### --> Hausman Test Result: Fixed effects!

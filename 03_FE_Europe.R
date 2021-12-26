@@ -119,7 +119,7 @@ FE_panel <- panel[, -fe_col_rem:-fe_col_end]
 ## transform cases to log
 
 FE_panel <- FE_panel %>%
-  select(-Protection_Of_Elderly_People, -Facial_Coverings, -Hemisphere, -Month) 
+  select(-Protection_Of_Elderly_People, -Hemisphere, -Month) 
 
 logs <- colnames(FE_panel)[str_detect(colnames(FE_panel), "Cases|Deaths")]
 FE_panel[, logs] <- FE_panel[, logs] + 0.0000001
