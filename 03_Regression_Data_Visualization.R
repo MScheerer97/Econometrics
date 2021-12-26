@@ -68,6 +68,7 @@ data[, 13:23] <- lapply(data[, 13:23], as.numeric)
 data[, 13:23] <- data[, 13:23] -1
 
 npi_reg <- data[, c(3, 8, 13:23)]
+colnames(npi_reg)[1:2] <- paste0("log_", colnames(npi_reg)[1:2])
 npi_reg <- stat.desc(npi_reg)
 
 npi_reg <- npi_reg[c("mean", "median", "std.dev"), ]

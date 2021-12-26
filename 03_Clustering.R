@@ -98,7 +98,7 @@ nodePar <- list(lab.cex = 0.6, pch = c(19, 19), cex = 0.8, col = "blue")
 emf(file = "figures/deaths_cases_cluster_average_linkage.emf")
 
 par(mar = c(5, 1, 1, 5))
-plot(hc2,  xlab = "Height",nodePar = nodePar, horiz = TRUE)
+plot(hc2, xlab = "Height", nodePar = nodePar, horiz = TRUE, type = "rectangle")
 
 dev.off()
 

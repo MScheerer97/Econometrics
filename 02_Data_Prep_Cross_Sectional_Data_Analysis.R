@@ -32,7 +32,8 @@ wb_data <- readRDS("Data/world_bank_complete.rds") %>%
 #### Aggregation of npi variables: 
 
 npi <- readRDS("Data/npi_daily.rds") %>%
-  select(-H7_Vaccination.policy)
+  select(-H7_Vaccination.policy) %>%
+  filter(Date <= "2021-01-01")
 
 investment_cols <- c("Country", colnames(npi)[15:16])
 
