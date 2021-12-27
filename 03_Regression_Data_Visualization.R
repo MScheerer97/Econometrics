@@ -62,6 +62,23 @@ deaths_histo <- ggplot(data, aes(x = exp(Weekly_Average_Deaths))) +
 
 ggsave("figures/deaths_histo.png", width = 10) 
 
+# log transformation
+
+cases_histo_log <- ggplot(data, aes(x = Weekly_Average_Cases)) +
+  geom_histogram(fill = "grey", position  = "dodge", bins = 50) + 
+  labs(x = "Weekly average cases", y = "Count") +
+  theme_classic()
+
+ggsave("figures/cases_histo_log.png", width = 10)  
+
+
+deaths_histo_log <- ggplot(data, aes(x = Weekly_Average_Deaths)) +
+  geom_histogram(fill = "grey", position  = "dodge", bins = 50) + 
+  labs(x = "Weekly average deaths", y = "Count") +
+  theme_classic()
+
+ggsave("figures/deaths_histo_log.png", width = 10) 
+
 ## Descriptive Stats for npis:
 
 data[, 13:23] <- lapply(data[, 13:23], as.numeric) 

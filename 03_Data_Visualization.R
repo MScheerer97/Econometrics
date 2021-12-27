@@ -336,7 +336,7 @@ covid_who <- covid_who %>%
 #### Line plot of daily cases for Germany and closest countries from clustering
 
 cl_countries <- covid_who %>%
-  filter(Country %in% c("Germany", "Israel", "Austria", "Korea, Rep.", "Slovak Republic")) 
+  filter(Country %in% c("Germany", "Belgium", "Netherlands", "Switzerland")) 
   
 cont_cases <- ggplot(cl_countries, aes(x = Date, y = New_cases, group = Country)) +
   geom_line(aes(color = Country)) +

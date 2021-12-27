@@ -116,7 +116,7 @@ scree <- ggplot(heights[1:10, ], aes(x = Clusters, y = Height)) +
   theme(axis.title.x = element_text(margin = margin(t = 10)), 
         axis.title.y = element_text(margin = margin(r = 10)))
 
-scree
+ggsave("figures/scree.png", width = 8)
 
 ## Add cluster to data
 
