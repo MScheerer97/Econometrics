@@ -120,7 +120,7 @@ ggsave("figures/scree.png", width = 8)
 
 ## Add cluster to data
 
-clusters <- cutree(hc, k = 5)
+clusters <- cutree(hc, k = 3)
 names(clusters) <- NULL
 
 clust <- cross_sec %>%

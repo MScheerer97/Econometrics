@@ -33,7 +33,7 @@ wb_data <- readRDS("Data/world_bank_complete.rds") %>%
 
 npi <- readRDS("Data/npi_daily.rds") %>%
   select(-H7_Vaccination.policy) %>%
-  filter(Date <= "2021-01-01")
+  filter(Date >= "2021-01-01")
 
 investment_cols <- c("Country", colnames(npi)[15:16])
 
@@ -90,8 +90,7 @@ hemi <- readRDS("Data/hemisphere.rds") %>%
 cases <- readRDS("Data/cases_daily.rds") %>%
   select(-Date)
 
-deaths <- readRDS("Data/deaths_daily.rds")%>%
-  select(-Date)
+deaths <- readRDS("Data/deaths_daily.rds")
 
 #### Vaccination rate in May, August and November
 

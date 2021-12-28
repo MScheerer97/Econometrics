@@ -144,14 +144,16 @@ covid_who <- read.csv("WHO-COVID-19-global-data.csv") %>%
 # Cumulative Cases and Deaths
 
 cum_cases <- covid_who %>%
-  select(Country, Cumulative_cases, Date) %>%
-  group_by(Country) %>%
-  filter(Date == max(Date)) 
+  select(Country, New_cases, Date) %>%
+  dplyr::group_by(Country) %>%
+  dplyr::filter(Date >= "2021-01-01") %>%
+  dplyr::summarise(Cumulative_cases = sum(New_cases))
 
 cum_deaths <- covid_who %>%
-  select(Country, Cumulative_deaths, Date) %>%
+  select(Country, New_deaths, Date) %>%
   group_by(Country) %>%
-  filter(Date == max(Date)) 
+  dplyr::filter(Date >= "2021-01-01") %>%
+  dplyr::summarise(Cumulative_deaths = sum(New_deaths))
 
 # Weekly Cases
 
