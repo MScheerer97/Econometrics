@@ -64,22 +64,31 @@ colnames(cross_sec) <- mapvalues(colnames(cross_sec), from = c("Gdp Per Capita U
 
 colnames(cross_sec) <- str_replace_all(colnames(cross_sec), " ", "_")
 
+
 cross_sec$GDP_Per_Capita_USD <- log(cross_sec$GDP_Per_Capita_USD)
-cross_sec$Population_Over_65 <- log(cross_sec$Population_Over_65)
+colnames(cross_sec)[c(14, 15, 17, 21)] <- c(paste0(colnames(cross_sec[14]), "_USD"), 
+                                    paste0(colnames(cross_sec[15]), "_USD"), 
+                                    paste0("log_", colnames(cross_sec)[17]), 
+                                    paste0(colnames(cross_sec)[21], "_per_1000_people"))
 
 ## Linear Regression - cross-sectional analysis
 
 cross_vars <- str_replace_all(colnames(cross_sec[, -3:-13]), "_", " ")[-1:-2]
 
 cross_lm_cases <- lm(Cumulative_Cases~. - Cumulative_Deaths, data = cross_sec[, -3:-13])
-coeftest(cross_lm_cases, vcov = vcovHC(cross_lm_cases, type = "HC0"))
+lm_coef <- coeftest(cross_lm_cases, vcov = vcovHC(cross_lm_cases, type = "HC0"))
+se_robust_cases <- lm_coef[, 2]
+names(se_robust_cases) <- NULL
+
 
 cross_lm_deaths <- lm(Cumulative_Deaths~. -Cumulative_Cases, data = cross_sec[, -3:-13])
-coeftest(cross_lm_deaths, vcov = vcovHC(cross_lm_deaths, type = "HC0"))
+lm_coef_deaths <- coeftest(cross_lm_deaths, vcov = vcovHC(cross_lm_deaths, type = "HC0"))
+se_robust_deaths <- lm_coef_deaths[, 2]
+names(se_robust_deaths) <- NULL
 
 stargazer(cross_lm_cases, cross_lm_deaths, 
           out = "figures/lm_models.html", covariate.labels = cross_vars, align = TRUE,
-          column.labels = c("Cases", "Deaths"), 
+          column.labels = c("Cases", "Deaths"), se = list(se_robust_cases, se_robust_deaths), 
           star.char = c("*", "**", "***"), star.cutoffs = c(.1, .05, .01), 
           omit.stat = c("rsq", "ser"), 
           add.lines = list(c("Robust standard errors", rep("Yes", 2))),
