@@ -283,7 +283,7 @@ stargazer(fe_one_case, fe_two_case, fe_three_case, fe_four_case,
           star.char = c("*", "**", "***"), star.cutoffs = c(.1, .05, .01), 
           omit.stat = c("rsq", "f"), add.lines = list(c("Country fixed effects", rep("Yes", 4)), 
                                                       c("Clustered standard errors", rep("Yes", 4))),
-          type = "html", omit = 13, font.size = "small", dep.var.labels.include = FALSE, 
+          type = "html", font.size = "small", dep.var.labels.include = FALSE, 
           column.sep.width = "10pt")
           
 ## Deaths
@@ -314,7 +314,7 @@ stargazer(fe_three_death, fe_four_death,
           star.char = c("*", "**", "***"), star.cutoffs = c(.1, .05, .01), 
           omit.stat = c("rsq", "f"), add.lines = list(c("Country fixed effects", rep("Yes", 4)), 
                                                       c("Clustered standard errors", rep("Yes", 4))),
-          type = "html", omit = 14, font.size = "small", dep.var.labels.include = FALSE, 
+          type = "html", font.size = "small", dep.var.labels.include = FALSE, 
           column.sep.width = "1pt")
 
 
