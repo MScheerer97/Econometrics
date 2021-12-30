@@ -81,10 +81,10 @@ ggsave("figures/deaths_histo_log.png", width = 10)
 
 ## Descriptive Stats for npis:
 
-data[, 13:23] <- lapply(data[, 13:23], as.numeric) 
-data[, 13:23] <- data[, 13:23] -1
+data[, 13:24] <- lapply(data[, 13:24], as.numeric) 
+data[, 13:24] <- data[, 13:24] -1
 
-npi_reg <- data[, c(3, 8, 13:23)]
+npi_reg <- data[, c(3, 8, 13:24)]
 colnames(npi_reg)[1:2] <- paste0("log_", colnames(npi_reg)[1:2])
 npi_reg <- stat.desc(npi_reg)
 
@@ -98,7 +98,7 @@ kbl(t(npi_reg)) %>%
   kable_classic() %>%
   kable_styling(full_width = F) %>%
   row_spec(0, bold = TRUE) %>%
-  pack_rows("Non-pharmaceutical interventions", 3, 13) %>%
+  pack_rows("Non-pharmaceutical interventions", 3, 14) %>%
   save_kable(file = "figures/binary_npi_regression.png", zoom = 1.25)
 
 
