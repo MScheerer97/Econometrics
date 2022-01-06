@@ -205,17 +205,18 @@ cases_deaths_plot <- ggplot(cor_cont, aes(`Cases Per 10 Million`, `Deaths Per 10
   geom_point(size = 8, aes(colour = Continent)) + 
   scale_color_viridis_d(alpha = 0.65) +
   geom_smooth(method = "lm", se = FALSE) + 
-  geom_text_repel(aes(label = Country), angle = 20, nudge_x = ifelse(cor_cont$Country == "Japan", 2, 0), 
-                  nudge_y = ifelse(cor_cont$Country == "Korea, Rep.", 2, 0)) +
+  geom_text_repel(aes(label = Country), angle = 20, nudge_y = ifelse(cor_cont$Country == "Korea, Rep.", 15, 0), 
+                  nudge_x = ifelse(cor_cont$Country == "Australia", 50000, 0)) +
   scale_x_continuous(breaks = seq(0, 3000000, 500000)) + 
   scale_y_continuous(breaks = seq(0, 400, 50)) + 
   labs(x = "Total cases per 10 million population", y = "Total deaths per 100 thousand population") +
   theme_classic() +
-  theme(legend.position = c(0.9, 0.3)) +
+  theme(legend.position = c(0.93, 0.25)) +
   guides(colour = guide_legend(title = "Continent\n", title.position = "top"), 
          label.hjust = 0.5) 
 
-ggsave("figures/deaths_cases_scatterplot.png", width = 14)  
+
+ggsave("figures/deaths_cases_scatterplot.png", width = 12)  
   
 #### Measure Days Statistics
 
